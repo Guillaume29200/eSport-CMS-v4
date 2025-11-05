@@ -64,7 +64,7 @@ location ~ /\. {
 esport-cms-v4/
 ├── index.php                    # Point d'entrée
 ├── .htaccess                    # Config Apache
-├── .env                         # Configuration (à créer)
+├── .env                         # Configuration
 │
 ├── /framework/                  # Framework core
 │   ├── /config/                 # Configurations
@@ -168,7 +168,7 @@ $rateLimiter->increment($_SERVER['REMOTE_ADDR'], 'login');
   "class": "MonModule\\MonModule",
   "requires": {
     "cms_version": ">=4.0.0",
-    "php_version": ">=8.1"
+    "php_version": ">=8.5"
   }
 }
 ```
