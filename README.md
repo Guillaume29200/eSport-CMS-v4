@@ -24,7 +24,7 @@ Framework moderne et sécurisé pour le CMS eSport-CMS V4.
 
 ### 1. Prérequis
 
-- PHP >= 8.5
+- PHP >= 8.4
 - Extensions: PDO, mbstring, curl, gd, zip, openssl
 - MySQL >= 5.7 ou PostgreSQL >= 10 ou SQLite 3
 - Apache (mod_rewrite) ou Nginx
@@ -46,7 +46,7 @@ location / {
 }
 
 location ~ \.php$ {
-    fastcgi_pass unix:/var/run/php/php8.1-fpm.sock;
+    fastcgi_pass unix:/var/run/php/php8.4-fpm.sock;
     fastcgi_index index.php;
     include fastcgi_params;
 }
@@ -168,7 +168,7 @@ $rateLimiter->increment($_SERVER['REMOTE_ADDR'], 'login');
   "class": "MonModule\\MonModule",
   "requires": {
     "cms_version": ">=4.0.0",
-    "php_version": ">=8.5"
+    "php_version": ">=8.4"
   }
 }
 ```
