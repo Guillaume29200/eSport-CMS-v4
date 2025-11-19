@@ -80,18 +80,35 @@ class ModuleManager
      */
     public function loadModules(): void
     {
-        // Récupérer modules actifs depuis DB
-        $activeModules = $this->db->query(
-            "SELECT * FROM modules WHERE active = 1 ORDER BY priority ASC"
-        );
-        
-        foreach ($activeModules as $moduleData) {
-            try {
-                $this->loadModule($moduleData['name']);
-            } catch (\Exception $e) {
-                $this->logger->error("Failed to load module: {$moduleData['name']}", [
-                    'error' => $e->getMessage()
-                ]);
+        try {
+            // Récupérer modules actifs depuis DB
+            $activeModules = $this->db->query(
+                "SELECT * FROM modules WHERE active = 1 ORDER BY priority ASC"
+            );
+            
+            foreach ($activeModules as $moduleData) {
+                try {
+                    $this->loadModule($moduleData['name']);
+                } catch (\Exception $e) {
+                    $this->logger->error("Failed to load module: {$moduleData['name']}", [
+                        'error' => $e->getMessage()
+                    ]);
+                }
+            }
+        } catch (\Exception $e) {
+            // Si table modules n'existe pas, charger tous les modules disponibles
+            $this->logger->warning("Table 'modules' not found, loading all available modules");
+            
+            $availableModules = $this->discoverModules();
+            
+            foreach ($availableModules as $moduleName => $config) {
+                try {
+                    $this->loadModule($moduleName);
+                } catch (\Exception $ex) {
+                    $this->logger->error("Failed to load module: {$moduleName}", [
+                        'error' => $ex->getMessage()
+                    ]);
+                }
             }
         }
         
