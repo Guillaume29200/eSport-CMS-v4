@@ -29,7 +29,7 @@ class Logger
     {
         $this->db = $db;
         $this->config = $config;
-        $this->logPath = __DIR__ . '/../../logs/';
+        $this->logPath = __DIR__ . '/../logs/';
         
         // Créer dossier logs si n'existe pas
         if (!is_dir($this->logPath)) {
