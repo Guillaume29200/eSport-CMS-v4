@@ -1,0 +1,33 @@
+{
+  "name": "Auth",
+  "version": "1.0.0",
+  "description": "Système d'authentification complet avec connexion, inscription, dashboard et gestion des rôles",
+  "author": "Guillaume - eSport-CMS",
+  "class": "Auth\\Auth",
+  "requires": {
+    "cms_version": ">=4.0.0",
+    "php_version": ">=8.0.0",
+    "modules": []
+  },
+  "permissions": [
+    "auth.login",
+    "auth.register",
+    "auth.manage_users",
+    "auth.view_dashboard",
+    "admin.access"
+  ],
+  "hooks": [
+    "admin.menu",
+    "user.login",
+    "user.logout",
+    "user.register"
+  ],
+  "settings": {
+    "allow_registration": true,
+    "require_email_verification": false,
+    "remember_me_duration": 2592000,
+    "session_lifetime": 7200,
+    "max_login_attempts": 5,
+    "lockout_duration": 900
+  }
+}
