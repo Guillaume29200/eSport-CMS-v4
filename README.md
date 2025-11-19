@@ -63,10 +63,13 @@ location ~ /\. {
 ```
 esport-cms-v4/
 ├── index.php                    # Point d'entrée
+├── routes.php                   # Routes Principales (Système)
 ├── .htaccess                    # Config Apache
 ├── .env                         # Configuration
 │
 ├── /framework/                  # Framework core
+│   ├── /logs/                   # Logs
+│   ├── /cache/                  # cache
 │   ├── /config/                 # Configurations
 │   ├── /Interfaces/             # Contrats modules
 │   ├── /Services/               # Services centraux
@@ -74,13 +77,8 @@ esport-cms-v4/
 │   ├── /ModuleManager/          # Gestionnaire modules
 │   └── /Views/                  # Templates framework
 │
-├── /admin/                      # Interface admin
-├── /front/                      # Interface publique
 ├── /modules/                    # Modules
 ├── /themes/                     # Thèmes
-├── /uploads/                    # Uploads utilisateurs
-├── /cache/                      # Cache
-└── /logs/                       # Logs
 ```
 
 ---
