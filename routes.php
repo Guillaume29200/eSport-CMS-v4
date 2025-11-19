@@ -1,61 +1,152 @@
 <?php
 /**
- * eSport-CMS V4 - Routes principales
+ * eSport-CMS V4 - Routes Principales (Système)
  * 
- * Définition des routes du CMS
- * Les modules enregistrent leurs propres routes via registerRoutes()
+ * Ce fichier contient UNIQUEMENT les routes système et globales.
+ * Chaque module enregistre ses propres routes via son fichier routes.php
+ * 
+ * @author Guillaume
+ * @version 4.0.0
  */
 
-// Page d'accueil
-$router->get('/', function() {
-    echo "<h1>eSport-CMS V4</h1>";
-    echo "<p>Bienvenue sur le CMS eSport moderne et sécurisé !</p>";
-    echo "<ul>";
-    echo "<li><a href='/admin'>Administration</a></li>";
-    echo "<li><a href='/install'>Installation</a></li>";
-    echo "</ul>";
-});
-
-// Routes admin (à implémenter dans /admin/routes.php)
-$router->group('/admin', function($router) {
-    // Dashboard
-    $router->get('/', function() {
-        echo "<h1>Admin Dashboard</h1>";
-        echo "<p>Interface admin à implémenter</p>";
-    });
+// ============================================
+// PAGE D'ACCUEIL
+// ============================================
+$router->get('/', function() use ($moduleManager, $sessionManager) {
+    // Vérifier si l'utilisateur est connecté
+    $isLoggedIn = isset($_SESSION['logged_in']) && $_SESSION['logged_in'] === true;
     
-    // Login
-    $router->get('/login', function() {
-        echo "<h1>Admin Login</h1>";
-        echo "<p>Page de connexion à implémenter</p>";
-    });
-    
-    // Logout
-    $router->post('/logout', function() {
-        session_destroy();
-        header('Location: /admin/login');
+    if ($isLoggedIn) {
+        // Rediriger selon le rôle
+        $role = $_SESSION['role'] ?? 'member';
+        $redirect = match($role) {
+            'admin', 'superadmin' => '/admin/dashboard',
+            'moderator' => '/admin/dashboard',
+            default => '/member/dashboard'
+        };
+        header("Location: $redirect");
         exit;
+    }
+    
+    // Page d'accueil pour visiteurs
+    require ROOT_PATH . '/front/views/home.php';
+});
+
+// ============================================
+// ROUTES D'INSTALLATION
+// ============================================
+$router->group('/install', function($router) {
+    // Vérifier si déjà installé
+    $installedFile = ROOT_PATH . '/.installed';
+    
+    if (file_exists($installedFile)) {
+        // Déjà installé, rediriger
+        $router->get('/', function() {
+            header('Location: /');
+            exit;
+        });
+        return;
+    }
+    
+    // Processus d'installation
+    $router->get('/', function() {
+        require ROOT_PATH . '/install/views/index.php';
+    });
+    
+    $router->get('/step/{step}', function($step) {
+        require ROOT_PATH . '/install/views/step-' . (int)$step . '.php';
+    });
+    
+    $router->post('/process', function() {
+        require ROOT_PATH . '/install/process.php';
     });
 });
 
-// Routes front (à implémenter dans /front/routes.php)
-$router->group('/front', function($router) {
-    // Espace membre
-    $router->get('/dashboard', function() {
-        echo "<h1>Espace Membre</h1>";
-        echo "<p>Dashboard membre à implémenter</p>";
+// ============================================
+// ROUTES DE MAINTENANCE
+// ============================================
+$router->group('/maintenance', function($router) {
+    // Page de maintenance
+    $router->get('/', function() {
+        http_response_code(503);
+        require ROOT_PATH . '/framework/Views/maintenance.php';
     });
 });
 
-// API routes
-$router->group('/api', function($router) {
-    // Exemple API endpoint
+// ============================================
+// ROUTES API SYSTÈME
+// ============================================
+$router->group('/api/system', function($router) use ($db) {
+    // Statut du système
     $router->get('/status', function() {
         header('Content-Type: application/json');
         echo json_encode([
             'status' => 'ok',
             'version' => '4.0.0',
-            'timestamp' => time()
+            'timestamp' => time(),
+            'environment' => getenv('APP_ENV') ?: 'production'
         ]);
     });
+    
+    // Health check (pour monitoring)
+    $router->get('/health', function() use ($db) {
+        header('Content-Type: application/json');
+        
+        $health = [
+            'status' => 'healthy',
+            'checks' => []
+        ];
+        
+        // Check database
+        try {
+            $db->query("SELECT 1");
+            $health['checks']['database'] = 'ok';
+        } catch (\Exception $e) {
+            $health['status'] = 'unhealthy';
+            $health['checks']['database'] = 'error';
+        }
+        
+        // Check sessions
+        $health['checks']['sessions'] = session_status() === PHP_SESSION_ACTIVE ? 'ok' : 'error';
+        
+        // Check uploads directory
+        $health['checks']['uploads'] = is_writable(ROOT_PATH . '/uploads') ? 'ok' : 'error';
+        
+        http_response_code($health['status'] === 'healthy' ? 200 : 503);
+        echo json_encode($health);
+    });
+});
+
+// ============================================
+// ROUTES UTILITAIRES
+// ============================================
+
+// Favicon
+$router->get('/favicon.ico', function() {
+    $favicon = ROOT_PATH . '/public/favicon.ico';
+    if (file_exists($favicon)) {
+        header('Content-Type: image/x-icon');
+        readfile($favicon);
+    } else {
+        http_response_code(404);
+    }
+    exit;
+});
+
+// Robots.txt
+$router->get('/robots.txt', function() {
+    header('Content-Type: text/plain');
+    echo "User-agent: *\n";
+    echo "Disallow: /admin/\n";
+    echo "Disallow: /api/\n";
+    echo "Disallow: /install/\n";
+    echo "Allow: /\n";
+    exit;
+});
+
+// Sitemap (optionnel)
+$router->get('/sitemap.xml', function() use ($db) {
+    header('Content-Type: application/xml');
+    // Générer sitemap dynamiquement
+    require ROOT_PATH . '/framework/Services/SitemapGenerator.php';
 });
