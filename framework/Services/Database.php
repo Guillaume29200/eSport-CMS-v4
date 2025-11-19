@@ -96,6 +96,14 @@ class Database
     }
     
     /**
+     * Préparer une requête (retourne PDOStatement)
+     */
+    public function prepare(string $sql): \PDOStatement
+    {
+        return $this->getPDO()->prepare($sql);
+    }
+    
+    /**
      * Exécuter requête SELECT
      */
     public function query(string $sql, array $params = []): array

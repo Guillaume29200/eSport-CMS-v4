@@ -17,6 +17,23 @@ class Router
     private array $routes = [];
     private array $middlewares = [];
     private ?string $currentGroup = null;
+    private array $dependencies = [];
+    
+    /**
+     * Définir les dépendances pour l'injection
+     */
+    public function setDependencies(array $dependencies): void
+    {
+        $this->dependencies = $dependencies;
+    }
+    
+    /**
+     * Ajouter une dépendance
+     */
+    public function addDependency(string $name, $instance): void
+    {
+        $this->dependencies[$name] = $instance;
+    }
     
     /**
      * Enregistrer route GET
@@ -166,16 +183,72 @@ class Router
                 throw new RouterException("Controller not found: {$class}");
             }
             
-            $controller = new $class();
+            // Instancier contrôleur avec injection de dépendances
+            $controller = $this->instantiateController($class);
             
             if (!method_exists($controller, $method)) {
                 throw new RouterException("Method not found: {$class}@{$method}");
             }
             
-            return $controller->$method($params);
+            // Passer les paramètres en tant que valeurs individuelles, pas en tableau
+            return $controller->$method(...array_values($params));
         }
         
         throw new RouterException('Invalid handler');
+    }
+    
+    /**
+     * Instancier un contrôleur avec injection de dépendances
+     */
+    private function instantiateController(string $class): object
+    {
+        // Utiliser Reflection pour inspecter le constructeur
+        $reflection = new \ReflectionClass($class);
+        $constructor = $reflection->getConstructor();
+        
+        // Si pas de constructeur, instancier directement
+        if (!$constructor) {
+            return new $class();
+        }
+        
+        // Résoudre les dépendances
+        $dependencies = [];
+        foreach ($constructor->getParameters() as $param) {
+            $type = $param->getType();
+            
+            if (!$type || !$type instanceof \ReflectionNamedType) {
+                throw new RouterException(
+                    "Cannot resolve dependency for parameter: {$param->getName()} in {$class}"
+                );
+            }
+            
+            $typeName = $type->getName();
+            
+            // Chercher dans les dépendances enregistrées
+            $dependency = null;
+            
+            // Essayer par nom de classe complet
+            if (isset($this->dependencies[$typeName])) {
+                $dependency = $this->dependencies[$typeName];
+            }
+            // Essayer par nom court (ex: Database au lieu de Framework\Services\Database)
+            else {
+                $shortName = substr(strrchr($typeName, '\\'), 1) ?: $typeName;
+                if (isset($this->dependencies[$shortName])) {
+                    $dependency = $this->dependencies[$shortName];
+                }
+            }
+            
+            if ($dependency === null) {
+                throw new RouterException(
+                    "Dependency not found: {$typeName} for {$class}"
+                );
+            }
+            
+            $dependencies[] = $dependency;
+        }
+        
+        return new $class(...$dependencies);
     }
     
     /**
