@@ -47,7 +47,7 @@ class AuthController
         require __DIR__ . '/../Views/auth/login.php';
     }
     
-/**
+    /**
      * Traiter la connexion
      */
     public function login(): void
@@ -79,6 +79,7 @@ class AuthController
         $identifier = $_POST['identifier'] ?? '';
         $password = $_POST['password'] ?? '';
         $rememberMe = isset($_POST['remember_me']);
+        $screenResolution = $_POST['screen_resolution'] ?? null;
         
         // Validation basique
         if (empty($identifier) || empty($password)) {
@@ -89,7 +90,7 @@ class AuthController
         
         // Tentative de connexion
         try {
-            $result = $this->authService->login($identifier, $password, $rememberMe);
+            $result = $this->authService->login($identifier, $password, $rememberMe, $screenResolution);
             
             if ($result['success']) {
                 echo json_encode([
@@ -165,8 +166,11 @@ class AuthController
             'last_name' => $_POST['last_name'] ?? '',
         ];
         
+        // Récupérer résolution écran
+        $screenResolution = $_POST['screen_resolution'] ?? null;
+        
         // Tentative d'inscription
-        $result = $this->authService->register($data);
+        $result = $this->authService->register($data, $screenResolution);
         
         // Retourner JSON
         header('Content-Type: application/json');

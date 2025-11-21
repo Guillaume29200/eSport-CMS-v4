@@ -397,7 +397,61 @@
             </div>
             <a href="<?= $basePath ?>/admin/users/create" class="btn btn-primary">+ Créer un utilisateur</a>
         </div>
+         <!-- Statistiques rapides -->
+        <div class="stats-row">
+            <div class="stat-box">
+                <div class="label">Total utilisateurs</div>
+                <div class="value"><?= count($users) ?></div>
+            </div>
+            <div class="stat-box">
+                <div class="label">Admins</div>
+                <div class="value"><?= count(array_filter($users, fn($u) => in_array($u['role'], ['admin', 'superadmin']))) ?></div>
+            </div>
+            <div class="stat-box">
+                <div class="label">Membres actifs</div>
+                <div class="value"><?= count(array_filter($users, fn($u) => $u['status'] === 'active')) ?></div>
+            </div>
+            <div class="stat-box">
+                <div class="label">Bannis</div>
+                <div class="value"><?= count(array_filter($users, fn($u) => $u['status'] === 'banned')) ?></div>
+            </div>
+        </div>
         
+        <!-- Filtres -->
+        <div class="filters">
+            <div class="filter-group">
+                <label>Rechercher</label>
+                <input type="text" id="searchInput" placeholder="Nom d'utilisateur ou email..." style="min-width: 250px;">
+            </div>
+            
+            <div class="filter-group">
+                <label>Rôle</label>
+                <select id="filterRole">
+                    <option value="">Tous les rôles</option>
+                    <option value="superadmin">Super Admin</option>
+                    <option value="admin">Admin</option>
+                    <option value="moderator">Modérateur</option>
+                    <option value="member">Membre</option>
+                </select>
+            </div>
+            
+            <div class="filter-group">
+                <label>Statut</label>
+                <select id="filterStatus">
+                    <option value="">Tous les statuts</option>
+                    <option value="active">Actif</option>
+                    <option value="inactive">Inactif</option>
+                    <option value="banned">Banni</option>
+                </select>
+            </div>
+            
+            <div class="filter-group">
+                <label>&nbsp;</label>
+                <button class="btn btn-primary" onclick="applyFilters()">Filtrer</button>
+            </div>
+        </div>       
+		
+		
         <?php if (isset($_GET['deleted'])): ?>
             <div class="alert alert-success">
                 ✅ L'utilisateur <strong><?= htmlspecialchars($_GET['username'] ?? 'inconnu') ?></strong> a été supprimé avec succès.
@@ -432,9 +486,11 @@
                         <th>Actions</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody id="usersTableBody">
                     <?php foreach ($users as $user): ?>
-                        <tr>
+                        <tr data-search="<?= strtolower(htmlspecialchars($user['username'] . ' ' . $user['email'])) ?>" 
+                            data-role="<?= htmlspecialchars($user['role']) ?>" 
+                            data-status="<?= htmlspecialchars($user['status']) ?>">
                             <td><strong>#<?= $user['id'] ?></strong></td>
                             <td><strong><?= htmlspecialchars($user['username']) ?></strong></td>
                             <td><?= htmlspecialchars($user['email']) ?></td>
@@ -472,7 +528,7 @@
                             <td><?= number_format($user['login_count'] ?? 0) ?></td>
                             <td>
                                 <?php if ($user['last_login']): ?>
-                                    <?= date('d/m/Y H:i', strtotime($user['last_login'])) ?>
+                                    <?= date('d/m/Y à H:i', strtotime($user['last_login'])) ?>
                                 <?php else: ?>
                                     <span style="color: #999;">Jamais</span>
                                 <?php endif; ?>
@@ -568,5 +624,84 @@
                 closeModal();
             }
         });
+    </script>
+<script>
+        // Filtrage en temps réel
+        document.getElementById('searchInput').addEventListener('input', applyFilters);
+        document.getElementById('filterRole').addEventListener('change', applyFilters);
+        document.getElementById('filterStatus').addEventListener('change', applyFilters);
+        
+        function applyFilters() {
+            const search = document.getElementById('searchInput').value.toLowerCase();
+            const role = document.getElementById('filterRole').value;
+            const status = document.getElementById('filterStatus').value;
+            
+            const rows = document.querySelectorAll('#usersTableBody tr');
+            let visibleCount = 0;
+            
+            rows.forEach(row => {
+                const rowSearch = row.dataset.search;
+                const rowRole = row.dataset.role;
+                const rowStatus = row.dataset.status;
+                
+                const matchSearch = !search || rowSearch.includes(search);
+                const matchRole = !role || rowRole === role;
+                const matchStatus = !status || rowStatus === status;
+                
+                if (matchSearch && matchRole && matchStatus) {
+                    row.style.display = '';
+                    visibleCount++;
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+            
+            // Afficher/masquer le message "Aucun résultat"
+            let noResultMsg = document.getElementById('noResultMessage');
+            
+            if (visibleCount === 0 && rows.length > 0) {
+                if (!noResultMsg) {
+                    noResultMsg = document.createElement('tr');
+                    noResultMsg.id = 'noResultMessage';
+                    noResultMsg.innerHTML = `
+                        <td colspan="9" style="text-align: center; padding: 40px; color: #666;">
+                            <div style="font-size: 48px; margin-bottom: 15px;">🔍</div>
+                            <strong style="font-size: 18px; display: block; margin-bottom: 5px;">Aucun résultat trouvé</strong>
+                            <span style="font-size: 14px;">Essayez de modifier vos critères de recherche</span>
+                        </td>
+                    `;
+                    document.getElementById('usersTableBody').appendChild(noResultMsg);
+                }
+                noResultMsg.style.display = '';
+            } else {
+                if (noResultMsg) {
+                    noResultMsg.style.display = 'none';
+                }
+            }
+            
+            // Mettre à jour le compteur (optionnel)
+            updateResultCount(visibleCount, rows.length);
+        }
+        
+        function updateResultCount(visible, total) {
+            let countElement = document.getElementById('resultCount');
+            
+            if (!countElement) {
+                // Créer l'élément compteur s'il n'existe pas
+                countElement = document.createElement('div');
+                countElement.id = 'resultCount';
+                countElement.style.cssText = 'padding: 10px 20px; background: #f8f9fa; border-radius: 8px; margin-bottom: 15px; color: #666; font-size: 14px;';
+                
+                const filtersDiv = document.querySelector('.filters');
+                filtersDiv.parentNode.insertBefore(countElement, filtersDiv.nextSibling);
+            }
+            
+            if (visible !== total) {
+                countElement.textContent = `📊 Affichage de ${visible} utilisateur(s) sur ${total}`;
+                countElement.style.display = 'block';
+            } else {
+                countElement.style.display = 'none';
+            }
+        }
     </script>
 <?php require __DIR__ . '/includes/footer.php'; ?>	

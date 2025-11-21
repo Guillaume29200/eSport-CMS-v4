@@ -213,7 +213,9 @@ class AdminController
         }
     }
     
-    /**
+
+
+	/**
      * Afficher détails utilisateur
      */
     public function showUser(int $id): void
@@ -226,17 +228,42 @@ class AdminController
             return;
         }
         
-        // Récupérer sessions de l'utilisateur
-        $sessions = $this->db->query("
-            SELECT * FROM user_sessions 
-            WHERE user_id = ? 
-            ORDER BY last_activity DESC 
-            LIMIT 10
-        ", [$id]);
+        // Instancier AuthTracker avec la base de données
+        $authTracker = new \Framework\Services\AuthTracker($this->db);
+        
+        // Récupérer l'historique des connexions (50 dernières)
+        $logins = $authTracker->getUserLogins($id, 50);
+        
+        // Récupérer les données d'inscription
+        $registrationData = $authTracker->getRegistrationData($id);
+        
+        // Récupérer la dernière connexion pour la carte
+        $lastLogin = $authTracker->getLastLogin($id);
+        
+        // Préparer les données pour la carte
+        $mapData = [];
+        if ($lastLogin && isset($lastLogin['latitude']) && isset($lastLogin['longitude']) && $lastLogin['latitude'] && $lastLogin['longitude']) {
+            $mapData = [
+                'lat' => (float)$lastLogin['latitude'],
+                'lng' => (float)$lastLogin['longitude'],
+                'city' => $lastLogin['city'] ?? 'Inconnu',
+                'country' => $lastLogin['country_name'] ?? 'Inconnu',
+                'ip' => $lastLogin['ip_address'] ?? 'N/A'
+            ];
+        }
+        
+        // Statistiques rapides
+        $totalLogins = count($logins);
+        $uniqueIPs = count(array_unique(array_filter(array_column($logins, 'ip_address'))));
+        $devices = array_count_values(array_filter(array_column($logins, 'device_type')));
+        $browsers = array_count_values(array_filter(array_column($logins, 'browser')));
+        
+        // Générer token CSRF
+        $csrfToken = $this->csrf->generateToken();
         
         // Afficher vue
-        require __DIR__ . '/../Views/admin/user-detail.php';
-    }
+        require __DIR__ . '/../Views/admin/users-details.php';
+    }	
     
     /**
      * Mettre à jour utilisateur

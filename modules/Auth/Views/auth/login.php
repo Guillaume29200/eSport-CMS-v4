@@ -231,6 +231,8 @@
         
         <form id="loginForm" method="POST" action="login">
             <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken ?? '') ?>">
+            <!-- Champ caché pour la résolution d'écran -->
+            <input type="hidden" name="screen_resolution" id="screen_resolution" value="">
             
             <div class="form-group">
                 <label for="identifier">Nom d'utilisateur ou Email</label>
@@ -267,6 +269,13 @@
     </div>
     
     <script>
+        // Récupérer la résolution d'écran au chargement
+        document.addEventListener('DOMContentLoaded', function() {
+            const screenResolution = window.screen.width + 'x' + window.screen.height;
+            document.getElementById('screen_resolution').value = screenResolution;
+            console.log('Résolution détectée:', screenResolution);
+        });
+        
         document.getElementById('loginForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
@@ -287,7 +296,8 @@
                 identifier: formData.get('identifier'),
                 password: formData.get('password') ? '***' : 'EMPTY',
                 csrf_token: formData.get('csrf_token'),
-                remember_me: formData.get('remember_me')
+                remember_me: formData.get('remember_me'),
+                screen_resolution: formData.get('screen_resolution')
             });
             
             try {

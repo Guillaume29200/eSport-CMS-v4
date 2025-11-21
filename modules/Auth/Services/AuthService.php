@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace Auth\Services;
 
 use Framework\Services\Database;
+use Framework\Services\AuthTracker;
 
 /**
  * Service d'authentification
@@ -18,12 +19,16 @@ use Framework\Services\Database;
 class AuthService
 {
     private Database $db;
+    private ?AuthTracker $authTracker = null;
     private int $maxLoginAttempts = 5;
     private int $lockoutDuration = 900; // 15 minutes
     
     public function __construct(Database $db)
     {
         $this->db = $db;
+        
+        // Initialiser le tracker de connexions
+        $this->authTracker = new AuthTracker($db);
     }
     
     /**
@@ -53,6 +58,14 @@ class AuthService
         // Vérifier le mot de passe
         if (!password_verify($password, $user['password'])) {
             $this->recordLoginAttempt($identifier, false);
+            
+            // ========================================
+            // TRACKER LA TENTATIVE ÉCHOUÉE
+            // ========================================
+            if ($this->authTracker) {
+                $this->authTracker->trackLogin($user['id'], false);
+            }
+            
             return [
                 'success' => false,
                 'error' => 'Identifiants incorrects.'
@@ -70,6 +83,13 @@ class AuthService
         // Connexion réussie
         $this->recordLoginAttempt($identifier, true);
         $this->createUserSession($user);
+        
+        // ========================================
+        // TRACKER LA CONNEXION RÉUSSIE
+        // ========================================
+        if ($this->authTracker) {
+            $this->authTracker->trackLogin($user['id'], true);
+        }
         
         // Remember Me
         if ($rememberMe) {
@@ -157,11 +177,25 @@ class AuthService
             ];
         }
         
+        // ========================================
+        // TRACKER L'INSCRIPTION
+        // ========================================
+        if ($this->authTracker) {
+            $this->authTracker->trackRegistration($userId);
+        }
+        
         // Récupérer l'utilisateur créé
         $user = $this->getUserById($userId);
         
         // Créer la session
         $this->createUserSession($user);
+        
+        // ========================================
+        // TRACKER LA PREMIÈRE CONNEXION (inscription = connexion)
+        // ========================================
+        if ($this->authTracker) {
+            $this->authTracker->trackLogin($userId, true);
+        }
         
         return [
             'success' => true,
@@ -187,6 +221,14 @@ class AuthService
         
         if ($result) {
             $this->createUserSession($result);
+            
+            // ========================================
+            // TRACKER LA CONNEXION VIA REMEMBER TOKEN
+            // ========================================
+            if ($this->authTracker) {
+                $this->authTracker->trackLogin($result['user_id'], true);
+            }
+            
             return true;
         }
         
