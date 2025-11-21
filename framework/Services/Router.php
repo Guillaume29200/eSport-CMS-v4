@@ -77,6 +77,12 @@ class Router
             $path = $this->currentGroup . $path;
         }
         
+        // Normaliser le chemin : 
+        // - Supprimer les doubles slashes
+        // - Supprimer le trailing slash (sauf pour la racine)
+        $path = preg_replace('#/+#', '/', $path);  // Remplace // par /
+        $path = rtrim($path, '/') ?: '/';          // Supprime trailing slash
+        
         $this->routes[] = [
             'method' => $method,
             'path' => $path,
@@ -92,7 +98,13 @@ class Router
     public function group(string $prefix, callable $callback): void
     {
         $previousGroup = $this->currentGroup;
-        $this->currentGroup = $prefix;
+        
+        // Concaténer avec le groupe parent (support des groupes imbriqués)
+        if ($previousGroup) {
+            $this->currentGroup = $previousGroup . $prefix;
+        } else {
+            $this->currentGroup = $prefix;
+        }
         
         $callback($this);
         
@@ -168,34 +180,37 @@ class Router
     /**
      * Exécuter handler
      */
-    private function executeHandler($handler, array $params): mixed
-    {
-        // Callable
-        if (is_callable($handler)) {
-            return $handler($params);
-        }
-        
-        // Format "ControllerClass@method"
-        if (is_string($handler) && str_contains($handler, '@')) {
-            [$class, $method] = explode('@', $handler);
-            
-            if (!class_exists($class)) {
-                throw new RouterException("Controller not found: {$class}");
-            }
-            
-            // Instancier contrôleur avec injection de dépendances
-            $controller = $this->instantiateController($class);
-            
-            if (!method_exists($controller, $method)) {
-                throw new RouterException("Method not found: {$class}@{$method}");
-            }
-            
-            // Passer les paramètres en tant que valeurs individuelles, pas en tableau
-            return $controller->$method(...array_values($params));
-        }
-        
-        throw new RouterException('Invalid handler');
-    }
+	private function executeHandler($handler, array $params): mixed
+	{
+		// CAST AUTO : string numérique → int
+		foreach ($params as &$p) {
+			if (ctype_digit($p)) {
+				$p = (int) $p;
+			}
+		}
+
+		if (is_callable($handler)) {
+			return $handler(...array_values($params));
+		}
+
+		if (is_string($handler) && str_contains($handler, '@')) {
+			[$class, $method] = explode('@', $handler);
+
+			if (!class_exists($class)) {
+				throw new RouterException("Controller not found: {$class}");
+			}
+
+			$controller = $this->instantiateController($class);
+
+			if (!method_exists($controller, $method)) {
+				throw new RouterException("Method not found: {$class}@{$method}");
+			}
+
+			return $controller->$method(...array_values($params));
+		}
+
+		throw new RouterException('Invalid handler');
+	}
     
     /**
      * Instancier un contrôleur avec injection de dépendances
