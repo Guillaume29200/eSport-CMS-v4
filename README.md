@@ -775,35 +775,9 @@ RedirectMatch 404 /\.git
 
 ---
 
-## 📚 Documentation des modules
-
-### Auth Module
-
-Voir [modules/Auth/README.md](modules/Auth/README.md)
-
-- Inscription/Connexion
-- Gestion utilisateurs
-- Rôles et permissions
-- Dashboard admin
-- Tracking avancé
-
-### PremiumManager Module
-
-Voir [modules/PremiumManager/README.md](modules/PremiumManager/README.md)
-
-- Plans d'abonnement
-- Paiements Stripe/PayPal
-- Gestion transactions
-- Système de coupons
-- Contenus premium
-
----
-
 ## 🤝 Contribution
 
 Ce projet est **propriétaire** et n'accepte pas de contributions externes.
-
-Pour toute question : contact@esport-cms.com
 
 ---
 
@@ -811,16 +785,13 @@ Pour toute question : contact@esport-cms.com
 
 Copyright © 2025 Guillaume - eSport-CMS  
 Tous droits réservés.
-
 Ce logiciel est propriétaire et ne peut être copié, modifié ou distribué sans autorisation écrite.
 
 ---
 
 ## 🔗 Liens
 
-- 🌐 **Site web** : [esport-cms.com](https://esport-cms.com)
-- 📧 **Support** : contact@esport-cms.com
-- 📖 **Documentation** : [docs.esport-cms.com](https://docs.esport-cms.com)
+- 🌐 **Site web** : [esport-cms.net](https://esport-cms.net)
 
 ---
 
