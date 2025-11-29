@@ -2,7 +2,7 @@
 
 > Framework PHP moderne et modulaire pour la création de sites eSport
 
-[![PHP Version](https://img.shields.io/badge/PHP-8.4%2B-blue)](https://www.php.net/)
+[![PHP Version](https://img.shields.io/badge/PHP-8.5%2B-blue)](https://www.php.net/)
 [![License](https://img.shields.io/badge/License-Proprietary-red)]()
 [![Version](https://img.shields.io/badge/Version-4.0.0-green)]()
 
@@ -190,7 +190,7 @@ esport-cms-v4/
 
 ### Prérequis
 
-- **PHP** >= 8.4
+- **PHP** >= 8.5
 - **Extensions PHP** : PDO, mbstring, curl, gd, zip, openssl, intl
 - **Base de données** : MySQL >= 5.7, PostgreSQL >= 10, ou SQLite 3
 - **Serveur Web** : Apache (mod_rewrite) ou Nginx
@@ -396,7 +396,7 @@ Configuration dans `/framework/config/security.php` :
   "class": "MonModule\\MonModule",
   "requires": {
     "cms_version": ">=4.0.0",
-    "php_version": ">=8.4"
+    "php_version": ">=8.5"
   },
   "permissions": [
     "monmodule.view",
